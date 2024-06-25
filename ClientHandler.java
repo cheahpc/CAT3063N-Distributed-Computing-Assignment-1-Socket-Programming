@@ -12,8 +12,38 @@ public class ClientHandler implements Runnable {
     private BufferedWriter bufferedWriter;
     private String clientUserName;
 
+    public void listenForMessage(String clientUserName) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String messageFromClient;
+                while (socket.isConnected()) {
+                    try {
+                        messageFromClient = bufferedReader.readLine();
+                        broadcastMessage(clientUserName + ": " + messageFromClient);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        closeEverything(socket, bufferedReader, bufferedWriter);
+                    }
+                }
+            }
+        }).start();
+    }
+
+    // Todo - either broadcast or specify client
     public void sendMessage() {
-        //
+        try {
+            Scanner scanner = new Scanner(System.in);
+            while (socket.isConnected()) {
+                String messageToSend = scanner.nextLine();
+                bufferedWriter.write(messageToSend);
+                bufferedWriter.newLine();
+                bufferedWriter.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            closeEverything(socket, bufferedReader, bufferedWriter);
+        }
     }
 
     public void broadcastMessage(String messageToSend) {
@@ -70,17 +100,10 @@ public class ClientHandler implements Runnable {
 
     @Override
     public void run() {
-        String messageFromClient;
-        while (socket.isConnected()) {
-            try {
-                messageFromClient = bufferedReader.readLine();
-                broadcastMessage(this.clientUserName + ": " + messageFromClient);
-            } catch (IOException e) {
-                e.printStackTrace();
-                closeEverything(socket, bufferedReader, bufferedWriter);
-                break;
-            }
-        }
+
+        listenForMessage(this.clientUserName);
+        sendMessage();
+
     }
 
 }
