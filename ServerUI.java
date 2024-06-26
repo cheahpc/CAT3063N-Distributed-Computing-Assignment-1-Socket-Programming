@@ -12,8 +12,8 @@ public class ServerUI extends JFrame {
 
     private JFrame jFrame;
     private JPanel jPanel;
-    private JLabel lblServerIP, lblServerIPValue, lblServerPort, lblTotalClients, lblMessageTo, lblMessage, lblServerLog,
-            lblServerStatus, lblServerStatusValue;
+    private JLabel lblServerIP, lblServerIPValue, lblServerPort, lblTotalClients, lblMessageTo, lblMessage,
+            lblServerLog, lblServerStatus, lblServerStatusValue;
     private JTextField txtFieldServerPort;
     private static JLabel lblActiveClientsCount;
     private JTextField txtFieldMessage;
@@ -141,7 +141,6 @@ public class ServerUI extends JFrame {
                 if (serverSocket != null && !serverSocket.isClosed()) {
                     // Close server
                     server.endServer();
-                    // serverSocket = null;
                     lblServerStatusValue.setText("Offline");
                     updateLog("#-Log: Server stopped");
                 }
@@ -155,7 +154,7 @@ public class ServerUI extends JFrame {
                 }
                 // Start server
                 try {
-                     serverSocket = new ServerSocket(Integer.parseInt(txtFieldServerPort.getText()));
+                    serverSocket = new ServerSocket(Integer.parseInt(txtFieldServerPort.getText()));
                 } catch (NumberFormatException | IOException e) {
                     e.printStackTrace();
                 }
@@ -181,6 +180,65 @@ public class ServerUI extends JFrame {
                     lblServerStatusValue.setText("Offline");
                     updateLog("#-Log: Server stopped");
                     server.endServer();
+                }
+            }
+        });
+
+        btnSend.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent ae) {
+                String message = txtFieldMessage.getText();
+                String target = (String) cmbClients.getSelectedItem();
+                // Check if message is empty
+                if (message.equals(""))
+                    return;
+
+                // Check if there is any client connected
+                if (server.getConnectedClients() == 0) {
+                    updateLog("#-Log: No client connected");
+                    return;
+                }
+                if (target.equals("-All-")) { // Broadcast message to all clients
+                    server.broadcastMessage("@Server: " + message, true);
+                } else { // Send message to specific client
+                    server.sendMessage("@Server: " + message, target);
+                }
+                updateLog("@Server: " + txtFieldMessage.getText());
+                txtFieldMessage.setText("");
+            }
+        });
+
+        btnRemove.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent ae) {
+                String clientName = (String) cmbClients.getSelectedItem();
+                if (clientName.equals("-All-")) {
+                    updateLog("#-Log: Cannot remove all clients");
+                    return;
+                }
+                server.removeClient(clientName);
+            }
+        });
+
+        txtFieldMessage.addKeyListener(new KeyAdapter() {
+            public void keyPressed(KeyEvent evt) {
+                if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+                    String message = txtFieldMessage.getText();
+                    String target = (String) cmbClients.getSelectedItem();
+                    // Check if message is empty
+                    if (message.equals(""))
+                        return;
+
+                    // Check if there is any client connected
+                    if (server.getConnectedClients() == 0) {
+                        updateLog("#-Log: No client connected");
+                        return;
+                    }
+                    if (target.equals("-All-")) { // Broadcast message to all clients
+                        server.broadcastMessage("@Server: " + message, true);
+                    } else { // Send message to specific client
+                        server.sendMessage("@Server: " + message, target);
+                    }
+                    updateLog("Server: " + txtFieldMessage.getText());
+                    txtFieldMessage.setText("");
                 }
             }
         });
@@ -216,11 +274,7 @@ public class ServerUI extends JFrame {
         cmbClients.addItem(client);
     }
 
-    public static void removeClients(String client) {
-        cmbClients.removeItem(client);
-    }
-
-    public static void clearClients() {
+     public static void clearClients() {
         cmbClients.removeAllItems();
         cmbClients.addItem("-All-");
     }

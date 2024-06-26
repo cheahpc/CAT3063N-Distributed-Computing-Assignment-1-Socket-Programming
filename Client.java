@@ -65,9 +65,15 @@ public class Client {
                     try {
                         msgFromGroupChat = bufferedReader.readLine();
                         System.out.println(msgFromGroupChat);
+                        ClientUI.updateMessageLog(msgFromGroupChat);
                     } catch (IOException e) {
                         e.printStackTrace();
                         closeEverything(socket, bufferedReader, bufferedWriter);
+                        System.out.println("Connection lost. Retrying...");
+                        ClientUI.lblServerStatus.setText("Server: Disconnected");
+                        ClientUI.btnConnect.setEnabled(true);
+                        ClientUI.btnSend.setEnabled(false);
+                        ClientUI.txtFieldMessageBox.setEnabled(false);
                         break;
                     }
                 }

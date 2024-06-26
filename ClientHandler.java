@@ -1,11 +1,10 @@
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Scanner;
 import java.net.Socket;
 
 public class ClientHandler implements Runnable {
-    
+
     public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
     private Socket socket;
     private BufferedReader bufferedReader;
@@ -22,41 +21,43 @@ public class ClientHandler implements Runnable {
                 while (socket.isConnected()) {
                     try {
                         messageFromClient = bufferedReader.readLine();
-                        broadcastMessage(clientUserName + ": " + messageFromClient);
+                        broadcastMessage("@" + clientUserName + ": " + messageFromClient, false);
                         // update log
-                        ServerUI.updateLog( clientIP + ":"+ clientPort + " @" + clientUserName + ": " + messageFromClient);
+                        ServerUI.updateLog(
+                                clientIP + ":" + clientPort + " @" + clientUserName + ": " + messageFromClient);
                     } catch (IOException e) {
                         e.printStackTrace();
                         closeEverything(socket, bufferedReader, bufferedWriter);
-                        break; 
+                        break;
                     }
                 }
             }
         }).start();
     }
 
-    // Todo - either broadcast or specify client
-    public void sendMessage() {
-        try {
-            Scanner scanner = new Scanner(System.in);
-            while (socket.isConnected()) {
-                String messageToSend = scanner.nextLine();
-                bufferedWriter.write(messageToSend);
-                bufferedWriter.newLine();
-                bufferedWriter.flush();
+    public String getClientName() {
+        return this.clientUserName;
+    }
+
+    public void sendMessage(String messageToSend, String target) {
+        for (ClientHandler clientHandler : clientHandlers) {
+            try {
+                if (clientHandler.clientUserName.equals(target)) {
+                    clientHandler.bufferedWriter.write(messageToSend);
+                    clientHandler.bufferedWriter.newLine();
+                    clientHandler.bufferedWriter.flush();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                closeEverything(clientHandler.socket, clientHandler.bufferedReader, clientHandler.bufferedWriter);
             }
-            scanner.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            
-            closeEverything(socket, bufferedReader, bufferedWriter);
         }
     }
 
-    public void broadcastMessage(String messageToSend) {
+    public void broadcastMessage(String messageToSend, boolean isServerMessage) {
         for (ClientHandler clientHandler : clientHandlers) {
             try {
-                if (!clientHandler.clientUserName.equals(clientUserName)) {
+                if (!clientHandler.clientUserName.equals(clientUserName) || isServerMessage) {
                     clientHandler.bufferedWriter.write(messageToSend);
                     clientHandler.bufferedWriter.newLine();
                     clientHandler.bufferedWriter.flush();
@@ -79,29 +80,47 @@ public class ClientHandler implements Runnable {
             this.clientPort = socket.getPort();
             // Add client to list
             clientHandlers.add(this);
-            broadcastMessage("%-Server: @" + this.clientUserName + " has joined the chat");
-            ServerUI.updateLog("#-Log: "  + this.clientIP + ":" + this.clientPort + " @" + this.clientUserName 
+            broadcastMessage("%-Server: @" + this.clientUserName + " has joined the chat", true);
+            ServerUI.updateLog("#-Log: " + this.clientIP + ":" + this.clientPort + " @" + this.clientUserName
                     + " has joined the chat");
 
-            // Populate combo box with active clients
-            populateComboBox();
-
-            // Update active clients count
-            ServerUI.updateActiveClientsCount(clientHandlers.size());
+            refreshConnectedClients();
         } catch (IOException e) {
             e.printStackTrace();
             closeEverything(socket, bufferedReader, bufferedWriter);
         }
     }
 
+    // Refresh connected clients list
+    private void refreshConnectedClients() {
+        ServerUI.clearClients();
+        for (ClientHandler clientHandler : clientHandlers) {
+            ServerUI.addClients(clientHandler.getClientName());
+        }
+        ServerUI.updateActiveClientsCount(clientHandlers.size());
+    }
+
+    public void removeClient(String clientName) {
+        for (ClientHandler clientHandler : clientHandlers) {
+            ServerUI.updateLog("LoopX");
+            if (clientHandler.clientUserName.equals(clientName)) {
+                clientHandlers.remove(clientHandler);
+                // clientHandler.closeEverything(clientHandler.socket, clientHandler.bufferedReader,
+                        // clientHandler.bufferedWriter);
+                ServerUI.updateLog("#-Log: " + clientHandler.clientIP + ":" + clientHandler.clientPort + " @" + clientHandler.clientUserName
+                        + " has left the chat");
+                break;
+            }
+        }
+        refreshConnectedClients();
+    }
+
     public void removeClientHandler() {
         clientHandlers.remove(this);
-        broadcastMessage("%-Server: @" + this.clientUserName + " has left the chat");
-        ServerUI.updateLog("#-Log: " + this.clientIP + ":" + this.clientPort + " @" + this.clientUserName + " has left the chat");
-        // Populate combo box with active clients
-        populateComboBox();
-        // Update active clients count
-        ServerUI.updateActiveClientsCount(clientHandlers.size());
+        broadcastMessage("%-Server: @" + this.clientUserName + " has left the chat", true);
+        ServerUI.updateLog(
+                "#-Log: " + this.clientIP + ":" + this.clientPort + " @" + this.clientUserName + " has left the chat");
+        refreshConnectedClients();
     }
 
     public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
@@ -121,14 +140,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    // Populate combo box with active clients
-    public static void populateComboBox() {
-        ServerUI.clearClients();
-        for (ClientHandler clientHandler : clientHandlers) {
-            ServerUI.addClients(clientHandler.clientUserName);
-        }
-    }
-
     public BufferedReader getBufferedReader() {
         return this.bufferedReader;
     }
@@ -140,7 +151,6 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         listenForMessage(this.clientUserName, this.clientIP, this.clientPort);
-        sendMessage();
     }
 
 }

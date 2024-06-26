@@ -11,10 +11,13 @@ public class ClientUI extends JFrame {
 
     private JFrame jFrame;
     private JPanel jPanel;
-    private JLabel lblTargetIP, lblTargetPort, lblUserName, lblYourAddress, lblUserOnline,
-            lblMessages, lblServerStatus;
-    private JTextField txtFieldTargetIP, txtFieldTargetPort, txtFieldUsername, txtFieldMessageBox;
-    private JButton btnConnect, btnClear, btnSend;
+    private JLabel lblTargetIP, lblTargetPort, lblUserName, lblYourAddress, lblMessages;
+    static JLabel lblServerStatus;
+    private JTextField txtFieldTargetIP, txtFieldTargetPort, txtFieldUsername;
+    static JTextField txtFieldMessageBox;
+    static JButton btnConnect;
+    private JButton btnClear;
+    static JButton btnSend;
 
     private static JTextArea txtAreaMessage;
     private JScrollPane scroll;
@@ -51,7 +54,6 @@ public class ClientUI extends JFrame {
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-        lblUserOnline = new JLabel("Online Users: 0");
         lblServerStatus = new JLabel("Server: Disconnected");
         lblMessages = new JLabel("Messages:");
 
@@ -66,6 +68,8 @@ public class ClientUI extends JFrame {
         btnSend = new JButton("Send");
         btnClear = new JButton("Clear");
 
+        btnSend.setEnabled(false);
+
         scroll = new JScrollPane(txtAreaMessage);
 
         // Set font size
@@ -73,7 +77,6 @@ public class ClientUI extends JFrame {
         lblTargetPort.setFont(lblTargetPort.getFont().deriveFont(16.0f));
         lblUserName.setFont(lblUserName.getFont().deriveFont(16.0f));
         lblYourAddress.setFont(lblYourAddress.getFont().deriveFont(16.0f));
-        lblUserOnline.setFont(lblUserOnline.getFont().deriveFont(16.0f));
         lblServerStatus.setFont(lblServerStatus.getFont().deriveFont(16.0f));
         lblMessages.setFont(lblMessages.getFont().deriveFont(16.0f));
 
@@ -99,7 +102,6 @@ public class ClientUI extends JFrame {
         jPanel.add(btnConnect, setGBC(3, 1, 0, 5, 1, 1, 0, 5, 0, 0));
 
         jPanel.add(lblYourAddress, setGBC(0, 2, 0, 5, 1, 1, 0, 5, 0, 0));
-        jPanel.add(lblUserOnline, setGBC(1, 2, 0, 5, 1, 1, 0, 5, 0, 0));
         jPanel.add(lblServerStatus, setGBC(2, 2, 0, 5, 1, 1, 0, 5, 0, 0));
 
         jPanel.add(lblMessages, setGBC(0, 3, 0, 5, 1, 1, 0, 5, 0, 0));
@@ -113,11 +115,26 @@ public class ClientUI extends JFrame {
         jFrame.add(jPanel);
         jFrame.setVisible(true);
 
+   
         // Add action listeners
         btnClear.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 txtAreaMessage.setText("");
+            }
+        });
+
+        txtFieldMessageBox.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    String message = txtFieldMessageBox.getText();
+                    if (!message.isEmpty()) {
+                        updateMessageLog("You: " + message);
+                        client.sendMessage(message);
+                        txtFieldMessageBox.setText("");
+                    }
+                }
             }
         });
 
@@ -129,10 +146,17 @@ public class ClientUI extends JFrame {
                 // Check for connection
                 try {
                     socket = new Socket("localhost", port);
+                    lblServerStatus.setText("Server: Connected");
+                    btnConnect.setEnabled(false);
+                    btnSend.setEnabled(true);
+                    txtFieldMessageBox.setEnabled(true);
                 } catch (IOException e1) {
                     e1.printStackTrace();
                     System.out.println("Connection lost. Retrying...");
                     lblServerStatus.setText("Server: Disconnected");
+                    btnConnect.setEnabled(true);
+                    btnSend.setEnabled(false);
+                    txtFieldMessageBox.setEnabled(false);
                 }
                 client = new Client(socket, username);
                 client.sendMessage(username);
@@ -145,8 +169,7 @@ public class ClientUI extends JFrame {
                 } catch (UnknownHostException e1) {
                     e1.printStackTrace();
                 }
-                // Set connected status
-                lblServerStatus.setText("Server: Connected");
+                
             }
         });
 

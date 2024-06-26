@@ -31,21 +31,37 @@ public class Server {
                 }
             }
         }).start();
+    }
 
+    public void sendMessage(String messageToSend, String target) {
+        clientHandler.sendMessage(messageToSend, target);
+    }
+
+    public void broadcastMessage(String messageToSend, boolean isServerMessage) {
+        clientHandler.broadcastMessage(messageToSend, isServerMessage);
     }
 
     public void endServer() {
         try {
             serverSocket.close();
             for (ClientHandler clientHandler : ClientHandler.clientHandlers) {
-                clientHandler.closeEverything(socket, clientHandler.getBufferedReader(),
-                        clientHandler.getBufferedWriter());
+                clientHandler.removeClientHandler();
             }
+            // clientHandler.removeClient(clientHandler.getClientName());
+
             Server.serverRunning = false;
             System.out.println("#-Log: Server closed");
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public int getConnectedClients() {
+        return ClientHandler.clientHandlers.size();
+    }
+
+    public void removeClient(String clientName) {
+        clientHandler.removeClient(clientName);
     }
 
     // public static void main(String[] args) throws IOException {
