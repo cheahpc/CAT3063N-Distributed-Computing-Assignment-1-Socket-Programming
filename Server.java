@@ -41,23 +41,9 @@ public class Server {
         }
     }
 
-    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
-        try {
-            if (bufferedReader != null)
-                bufferedReader.close();
-
-            if (bufferedWriter != null)
-                bufferedWriter.close();
-
-            if (socket != null && !socket.isClosed())
-                socket.close();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public boolean isRunning() {
+        return !serverSocket.isClosed();
     }
-
-
     public static void main(String[] args) throws IOException {
         ServerSocket serverSocket = new ServerSocket(5000);
         Server server = new Server(serverSocket);

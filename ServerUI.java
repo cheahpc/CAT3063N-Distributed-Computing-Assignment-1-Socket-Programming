@@ -2,28 +2,27 @@ import java.awt.event.*;
 import javax.swing.*;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-
 import java.net.*;
 import java.io.*;
 
 public class ServerUI extends JFrame {
+    private ServerSocket serverSocket;
     private Socket socket = null;
-    private ServerSocket server = null;
     private DataInputStream in = null;
 
     private int connectionCount = 0;
 
-    JFrame jFrame;
-    JPanel jPanel;
-    JLabel lblSeverIP, lblServerIPValue, lblServerPort, lblTotalClients, lblMessageTo, lblMessage, lblServerLog;
-    JTextField txtFieldServerPort, txtFieldTotalClients, txtFieldMessage;
-    JButton btnChange, btnSend;
-    JComboBox<String> cmbClients;
-    JTextArea txtAreaServerLog;
-    JScrollPane scroll;
-    GridBagConstraints gbConstraints;
+    private JFrame jFrame;
+    private JPanel jPanel;
+    private JLabel lblSeverIP, lblServerIPValue, lblServerPort, lblTotalClients, lblMessageTo, lblMessage, lblServerLog;
+    private JTextField txtFieldServerPort, txtFieldTotalClients, txtFieldMessage;
+    private JButton btnChange, btnSend;
+    private JComboBox<String> cmbClients;
+    private JTextArea txtAreaServerLog;
+    private JScrollPane scroll;
+    private GridBagConstraints gbConstraints;
 
-    GridBagConstraints setGBC(int x, int y, int px, int py, int gWidth, int gHeight, int to, int le, int bo, int ri) {
+    private GridBagConstraints setGBC(int x, int y, int px, int py, int gWidth, int gHeight, int to, int le, int bo, int ri) {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = x;
         gbc.gridy = y;
@@ -36,7 +35,7 @@ public class ServerUI extends JFrame {
         return gbc;
     }
 
-    ServerUI() {
+    public ServerUI() {
         jFrame = new JFrame("Chat Server");
         jFrame.setSize(900, 600);
         jFrame.setLocationRelativeTo(null);
@@ -122,46 +121,25 @@ public class ServerUI extends JFrame {
         // Add action listeners
         btnChange.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent ae) {
-                txtAreaServerLog.append("#-Log: Changing server port...\n");
-
+                updateLog("#-Log: Changing server port...");
                 if (txtFieldServerPort.getText().equals("") || Integer.parseInt(txtFieldServerPort.getText()) > 65535
                         || Integer.parseInt(txtFieldServerPort.getText()) < 1024) {
                     txtFieldServerPort.setText("5500");
-                    txtAreaServerLog.append("!-Error: Port number must be between 1024 and 65535\n");
-                    txtAreaServerLog.append("#-Log: Default server port used (5500)\n");
+                    updateLog("!-Error: Port number must be between 1024 and 65535");
+                    updateLog("#-Log: Default server port used (5500)");
                 }
-                // Start server
+                // Check if server is already started
+                if (server.isRunning()) {
+                    // Close server
+                    server.closeEverything
+                
+                }
                 try {
-                    server = new ServerSocket(Integer.parseInt(txtFieldServerPort.getText()));
-                    txtAreaServerLog.append("#-Log: Server started\n");
-                    // Print the server address
-                    txtAreaServerLog
-                            .append("#-Log: Socket: " + lblServerIPValue + ":" + txtFieldServerPort.getText() + "\n");
-                    txtAreaServerLog.append("#-Log: Waiting for a client ...\n");
-
-                    // takes input from the client socket
-                    // in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-                    // Print the client address
-                    System.out.println("Client address: " + socket.getInetAddress());
-                    // Print message from client
-                    // String line = "";
-                    // reads message from client until "Over" is sent
-                    // while (!line.equals("Over")) {
-                    // try {
-                    // line = in.readUTF();
-                    // System.out.println(line);
-
-                    // } catch (IOException i) {
-                    // System.out.println(i);
-                    // }
-                    // }
-
-                    // System.out.println("Closing connection");
-                    // close connection
-                    // socket.close();
-                    // in.close();
-                } catch (IOException i) {
-                    System.out.println(i);
+                    serverSocket = new ServerSocket(5000);
+                    Server server = new Server(serverSocket);
+                    server.startServer();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
 
@@ -181,8 +159,19 @@ public class ServerUI extends JFrame {
         });
     }
 
+    public void clearLog() {
+        txtAreaServerLog.setText("");
+    }
+
+    public void updateLog(String message) {
+        txtAreaServerLog.append(message + "\n");
+    }
+
+    public void updateTotalClients(int count) {
+        txtFieldTotalClients.setText(Integer.toString(count));
+    }
+
     public static void main(String[] args) {
         new ServerUI();
-        
     }
 }
