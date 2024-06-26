@@ -11,7 +11,9 @@ public class ClientUI extends JFrame {
 
     private JFrame jFrame;
     private JPanel jPanel;
-    private JLabel lblTargetIP, lblTargetPort, lblUserName, lblYourAddress, lblMessages;
+    private JLabel lblTargetIP, lblTargetPort, lblUserName;
+    static JLabel lblMyAddress;
+    private JLabel lblMessages;
     static JLabel lblServerStatus;
     private JTextField txtFieldTargetIP, txtFieldTargetPort, txtFieldUsername;
     static JTextField txtFieldMessageBox;
@@ -50,7 +52,7 @@ public class ClientUI extends JFrame {
         lblTargetPort = new JLabel("Target Port:");
         lblUserName = new JLabel("Username:");
         try {
-            lblYourAddress = new JLabel("My Address: " + InetAddress.getLocalHost().getHostAddress() + ":?");
+            lblMyAddress = new JLabel("My Address: " + InetAddress.getLocalHost().getHostAddress() + ":?");
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
@@ -76,7 +78,7 @@ public class ClientUI extends JFrame {
         lblTargetIP.setFont(lblTargetIP.getFont().deriveFont(16.0f));
         lblTargetPort.setFont(lblTargetPort.getFont().deriveFont(16.0f));
         lblUserName.setFont(lblUserName.getFont().deriveFont(16.0f));
-        lblYourAddress.setFont(lblYourAddress.getFont().deriveFont(16.0f));
+        lblMyAddress.setFont(lblMyAddress.getFont().deriveFont(16.0f));
         lblServerStatus.setFont(lblServerStatus.getFont().deriveFont(16.0f));
         lblMessages.setFont(lblMessages.getFont().deriveFont(16.0f));
 
@@ -101,7 +103,7 @@ public class ClientUI extends JFrame {
         jPanel.add(txtFieldUsername, setGBC(2, 1, 0, 5, 1, 1, 0, 5, 0, 0));
         jPanel.add(btnConnect, setGBC(3, 1, 0, 5, 1, 1, 0, 5, 0, 0));
 
-        jPanel.add(lblYourAddress, setGBC(0, 2, 0, 5, 1, 1, 0, 5, 0, 0));
+        jPanel.add(lblMyAddress, setGBC(0, 2, 0, 5, 1, 1, 0, 5, 0, 0));
         jPanel.add(lblServerStatus, setGBC(2, 2, 0, 5, 1, 1, 0, 5, 0, 0));
 
         jPanel.add(lblMessages, setGBC(0, 3, 0, 5, 1, 1, 0, 5, 0, 0));
@@ -115,7 +117,6 @@ public class ClientUI extends JFrame {
         jFrame.add(jPanel);
         jFrame.setVisible(true);
 
-   
         // Add action listeners
         btnClear.addActionListener(new ActionListener() {
             @Override
@@ -164,12 +165,12 @@ public class ClientUI extends JFrame {
 
                 // get output port
                 try {
-                    lblYourAddress.setText("My Address: " + InetAddress.getLocalHost().getHostAddress() + ":"
+                    lblMyAddress.setText("My Address: " + InetAddress.getLocalHost().getHostAddress() + ":"
                             + socket.getLocalPort());
                 } catch (UnknownHostException e1) {
                     e1.printStackTrace();
                 }
-                
+
             }
         });
 

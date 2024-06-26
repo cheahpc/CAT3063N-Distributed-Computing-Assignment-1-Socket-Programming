@@ -18,9 +18,12 @@ public class ClientHandler implements Runnable {
             @Override
             public void run() {
                 String messageFromClient;
-                while (socket.isConnected()) {
+                while (!socket.isClosed()) {
                     try {
                         messageFromClient = bufferedReader.readLine();
+                        if (messageFromClient == null) {
+                            throw new IOException();
+                        }
                         broadcastMessage("@" + clientUserName + ": " + messageFromClient, false);
                         // update log
                         ServerUI.updateLog(
@@ -80,7 +83,7 @@ public class ClientHandler implements Runnable {
             this.clientPort = socket.getPort();
             // Add client to list
             clientHandlers.add(this);
-            broadcastMessage("%-Server: @" + this.clientUserName + " has joined the chat", true);
+            broadcastMessage("@Server: " + this.clientUserName + " has joined the chat", true);
             ServerUI.updateLog("#-Log: " + this.clientIP + ":" + this.clientPort + " @" + this.clientUserName
                     + " has joined the chat");
 
@@ -102,13 +105,14 @@ public class ClientHandler implements Runnable {
 
     public void removeClient(String clientName) {
         for (ClientHandler clientHandler : clientHandlers) {
-            ServerUI.updateLog("LoopX");
             if (clientHandler.clientUserName.equals(clientName)) {
                 clientHandlers.remove(clientHandler);
-                // clientHandler.closeEverything(clientHandler.socket, clientHandler.bufferedReader,
-                        // clientHandler.bufferedWriter);
-                ServerUI.updateLog("#-Log: " + clientHandler.clientIP + ":" + clientHandler.clientPort + " @" + clientHandler.clientUserName
-                        + " has left the chat");
+                // Close the socket
+                try {
+                    clientHandler.socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 break;
             }
         }
@@ -117,7 +121,7 @@ public class ClientHandler implements Runnable {
 
     public void removeClientHandler() {
         clientHandlers.remove(this);
-        broadcastMessage("%-Server: @" + this.clientUserName + " has left the chat", true);
+        broadcastMessage("@Server: " + this.clientUserName + " has left the chat", true);
         ServerUI.updateLog(
                 "#-Log: " + this.clientIP + ":" + this.clientPort + " @" + this.clientUserName + " has left the chat");
         refreshConnectedClients();
@@ -134,10 +138,24 @@ public class ClientHandler implements Runnable {
 
             if (socket != null && !socket.isClosed())
                 socket.close();
-
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void endServer() {
+        for (ClientHandler clientHandler : clientHandlers) {
+            try {
+                clientHandler.socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        refreshConnectedClients();
+    }
+
+    public Socket getSocket() {
+        return this.socket;
     }
 
     public BufferedReader getBufferedReader() {

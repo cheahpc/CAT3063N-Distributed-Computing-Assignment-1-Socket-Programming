@@ -7,7 +7,6 @@ public class Server {
     private ServerSocket serverSocket;
     private ClientHandler clientHandler;
     private Socket socket;
-    public static boolean serverRunning = false;
 
     public Server(ServerSocket serverSocket) {
         this.serverSocket = serverSocket;
@@ -24,7 +23,6 @@ public class Server {
                         clientHandler = new ClientHandler(socket);
                         Thread thread = new Thread(clientHandler);
                         thread.start();
-                        Server.serverRunning = true;
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -42,15 +40,11 @@ public class Server {
     }
 
     public void endServer() {
+        // Close all client handlers
+        if (clientHandler != null)
+            clientHandler.endServer();
         try {
             serverSocket.close();
-            for (ClientHandler clientHandler : ClientHandler.clientHandlers) {
-                clientHandler.removeClientHandler();
-            }
-            // clientHandler.removeClient(clientHandler.getClientName());
-
-            Server.serverRunning = false;
-            System.out.println("#-Log: Server closed");
         } catch (IOException e) {
             e.printStackTrace();
         }

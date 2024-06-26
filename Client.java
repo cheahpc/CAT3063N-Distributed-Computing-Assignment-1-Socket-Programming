@@ -40,18 +40,12 @@ public class Client {
     }
 
     public void sendMessage(String message) {
-        // Prevent the main thread from blocking
-        if (socket.isConnected()) {
-            try {
-                bufferedWriter.write(message);
-                bufferedWriter.newLine();
-                bufferedWriter.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-        } else {
-            System.out.println("Connection lost. Please reconnect.");
+        try {
+            bufferedWriter.write(message);
+            bufferedWriter.newLine();
+            bufferedWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
     }
@@ -61,15 +55,18 @@ public class Client {
             @Override
             public void run() {
                 String msgFromGroupChat;
-                while (socket.isConnected()) {
+                while (!socket.isClosed()) {
                     try {
                         msgFromGroupChat = bufferedReader.readLine();
-                        System.out.println(msgFromGroupChat);
+
+                        if (msgFromGroupChat == null) 
+                            throw new IOException();
+                        
                         ClientUI.updateMessageLog(msgFromGroupChat);
                     } catch (IOException e) {
                         e.printStackTrace();
                         closeEverything(socket, bufferedReader, bufferedWriter);
-                        System.out.println("Connection lost. Retrying...");
+                        ClientUI.updateMessageLog("Connection lost.");
                         ClientUI.lblServerStatus.setText("Server: Disconnected");
                         ClientUI.btnConnect.setEnabled(true);
                         ClientUI.btnSend.setEnabled(false);
@@ -91,7 +88,6 @@ public class Client {
 
             if (socket != null && !socket.isClosed())
                 socket.close();
-
         } catch (IOException e) {
             e.printStackTrace();
         }

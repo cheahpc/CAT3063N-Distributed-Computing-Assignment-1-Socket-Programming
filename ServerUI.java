@@ -67,6 +67,7 @@ public class ServerUI extends JFrame {
         txtAreaServerLog = new JTextArea(16, 60);
 
         cmbClients = new JComboBox<String>();
+        cmbClients.addItem("-All-");
 
         btnStart = new JButton("Start");
         btnStop = new JButton("Stop");
@@ -136,7 +137,6 @@ public class ServerUI extends JFrame {
         // Add action listeners
         btnStart.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent ae) {
-                Server.serverRunning = true;
                 // Check if server is already started
                 if (serverSocket != null && !serverSocket.isClosed()) {
                     // Close server
@@ -176,11 +176,10 @@ public class ServerUI extends JFrame {
         btnStop.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent ae) {
                 // Close Server
-                if (serverSocket != null && !serverSocket.isClosed()) {
-                    lblServerStatusValue.setText("Offline");
-                    updateLog("#-Log: Server stopped");
-                    server.endServer();
-                }
+                server.endServer();
+                lblServerStatusValue.setText("Offline");
+                updateLog("#-Log: Server ended");
+
             }
         });
 
@@ -214,7 +213,9 @@ public class ServerUI extends JFrame {
                     updateLog("#-Log: Cannot remove all clients");
                     return;
                 }
+                server.sendMessage("@Server: You have been removed.", clientName);
                 server.removeClient(clientName);
+
             }
         });
 
@@ -274,7 +275,7 @@ public class ServerUI extends JFrame {
         cmbClients.addItem(client);
     }
 
-     public static void clearClients() {
+    public static void clearClients() {
         cmbClients.removeAllItems();
         cmbClients.addItem("-All-");
     }
