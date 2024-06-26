@@ -13,13 +13,12 @@ public class ServerUI extends JFrame {
 
     private JFrame jFrame;
     private JPanel jPanel;
-    private JLabel lblSeverIP, lblServerIPValue, lblServerPort, lblTotalClients, lblMessageTo, lblMessage, lblServerLog;
+    private JLabel lblSeverIP, lblServerIPValue, lblServerPort, lblTotalClients, lblMessageTo, lblMessage, lblServerLog, lblServerStatus, lblServerStatusValue;
     private JTextField txtFieldServerPort, txtFieldTotalClients, txtFieldMessage;
     private JButton btnChange, btnSend;
     private JComboBox<String> cmbClients;
     private static JTextArea txtAreaServerLog;
     private JScrollPane scroll;
-    private GridBagConstraints gbConstraints;
 
     private GridBagConstraints setGBC(int x, int y, int px, int py, int gWidth, int gHeight, int to, int le, int bo,
             int ri) {
@@ -43,7 +42,6 @@ public class ServerUI extends JFrame {
 
         jPanel = new JPanel();
         jPanel.setLayout(new GridBagLayout());
-        gbConstraints = new GridBagConstraints();
 
         // Create components
         lblSeverIP = new JLabel("Server IP:");
@@ -52,6 +50,8 @@ public class ServerUI extends JFrame {
         lblMessageTo = new JLabel("Message To:");
         lblMessage = new JLabel("Message:");
         lblServerLog = new JLabel("Server Log:");
+        lblServerStatus = new JLabel("Server Status:");
+        lblServerStatusValue = new JLabel("Offline");
         try {
             lblServerIPValue = new JLabel(InetAddress.getLocalHost().getHostAddress());
         } catch (UnknownHostException e) {
@@ -82,16 +82,18 @@ public class ServerUI extends JFrame {
         lblTotalClients.setFont(lblTotalClients.getFont().deriveFont(16.0f));
         lblMessageTo.setFont(lblMessageTo.getFont().deriveFont(16.0f));
         lblServerIPValue.setFont(lblServerIPValue.getFont().deriveFont(16.0f));
+        lblMessage.setFont(lblMessage.getFont().deriveFont(16.0f));
+        lblServerLog.setFont(lblServerLog.getFont().deriveFont(16.0f));
+        lblServerStatus.setFont(lblServerStatus.getFont().deriveFont(16.0f));
+        lblServerStatusValue.setFont(lblServerStatusValue.getFont().deriveFont(16.0f));
         txtFieldServerPort.setFont(txtFieldServerPort.getFont().deriveFont(16.0f));
         txtFieldTotalClients.setFont(txtFieldTotalClients.getFont().deriveFont(16.0f));
+        txtFieldMessage.setFont(txtFieldMessage.getFont().deriveFont(16.0f));
+        txtAreaServerLog.setFont(txtAreaServerLog.getFont().deriveFont(16.0f));
         cmbClients.setFont(cmbClients.getFont().deriveFont(16.0f));
         btnChange.setFont(btnChange.getFont().deriveFont(16.0f));
-        lblMessage.setFont(lblMessage.getFont().deriveFont(16.0f));
-        txtFieldMessage.setFont(txtFieldMessage.getFont().deriveFont(16.0f));
         btnSend.setFont(btnSend.getFont().deriveFont(16.0f));
-        lblServerLog.setFont(lblServerLog.getFont().deriveFont(16.0f));
-        txtAreaServerLog.setFont(txtAreaServerLog.getFont().deriveFont(16.0f));
-
+    
         // Set scroll bar policy
         scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
@@ -112,6 +114,8 @@ public class ServerUI extends JFrame {
         jPanel.add(btnSend, setGBC(4, 2, 0, 5, 1, 1, 10, 5, 0, 0));
 
         jPanel.add(lblServerLog, setGBC(0, 3, 0, 5, 1, 1, 10, 5, 0, 0));
+        jPanel.add(lblServerStatus, setGBC(3, 3, 0, 5, 1, 1, 10, 5, 0, 0));
+        jPanel.add(lblServerStatusValue, setGBC(4, 3, 0, 5, 1, 1, 10, 5, 0, 0));
 
         jPanel.add(scroll, setGBC(0, 4, 0, 10, 5, 1, 10, 5, 0, 0));
 
@@ -138,7 +142,7 @@ public class ServerUI extends JFrame {
                         e.printStackTrace();
                     }
                 }
-                // Start server without interupting UI refreh
+                // Start server
                 new Thread(new Runnable() {
                     public void run() {
                         try {
@@ -175,7 +179,8 @@ public class ServerUI extends JFrame {
         // Get date and time up to milliseconds
         java.util.Date date = new java.util.Date();
         java.sql.Timestamp timestamp = new java.sql.Timestamp(date.getTime());
-        ServerUI.txtAreaServerLog.append(timestamp + " " + message + "\n");
+        String formattedTimestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(timestamp);
+        ServerUI.txtAreaServerLog.append(formattedTimestamp + " " + message + "\n");
     }
 
     public void updateTotalClients(int count) {

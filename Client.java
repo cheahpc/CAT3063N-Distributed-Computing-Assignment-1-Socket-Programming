@@ -21,21 +21,27 @@ public class Client {
     }
 
     public void sendMessage() {
-        try {
-            bufferedWriter.write(userName);
-            bufferedWriter.newLine();
-            bufferedWriter.flush();
-            Scanner scanner = new Scanner(System.in);
-            while (socket.isConnected()) {
-                String messageToSend = scanner.nextLine();
-                bufferedWriter.write(messageToSend);
-                bufferedWriter.newLine();
-                bufferedWriter.flush();
+        // Prevent the main thread from blocking
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    bufferedWriter.write(userName);
+                    bufferedWriter.newLine();
+                    bufferedWriter.flush();
+                    Scanner scanner = new Scanner(System.in);
+                    while (socket.isConnected()) {
+                        String messageToSend = scanner.nextLine();
+                        bufferedWriter.write(messageToSend);
+                        bufferedWriter.newLine();
+                        bufferedWriter.flush();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-            closeEverything(socket, bufferedReader, bufferedWriter);
-        }
+        }).start();
+
     }
 
     public void listenForMessage() {
@@ -50,7 +56,6 @@ public class Client {
                     } catch (IOException e) {
                         e.printStackTrace();
                         closeEverything(socket, bufferedReader, bufferedWriter);
-                        System.out.println("Server error");
                         break;
                     }
                 }
@@ -78,9 +83,27 @@ public class Client {
         Scanner scanner = new Scanner(System.in);
         System.out.print("Enter username: ");
         String username = scanner.nextLine();
-        Socket socket = new Socket("localhost", 5500);
-        Client client = new Client(socket, username);
-        client.listenForMessage();
-        client.sendMessage();
+        Socket socket = null;
+        Client client = null;
+        while (true) {
+            // Check for connection
+            try {
+                socket = new Socket("localhost", 5500);
+                client = new Client(socket, username);
+            } catch (IOException e) {
+                e.printStackTrace();
+                client.closeEverything(socket, client.bufferedReader, client.bufferedWriter);
+                System.out.println("Connection lost. Retrying...");
+                // Sleep for 5 seconds before retrying
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+                continue;
+            }
+            client.listenForMessage();
+            client.sendMessage();
+        }
     }
 }

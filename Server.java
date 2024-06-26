@@ -1,16 +1,11 @@
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
 
 public class Server {
 
     private ServerSocket serverSocket;
-    private Socket socket;
-    private BufferedReader bufferedReader;
-    private BufferedWriter bufferedWriter;
-    private String userName;
+
 
     public Server(ServerSocket serverSocket) {
         this.serverSocket = serverSocket;
@@ -20,7 +15,7 @@ public class Server {
         try {
             while (!serverSocket.isClosed()) {
                 Socket socket = serverSocket.accept();
-                System.out.println("#-Log: New client connected");
+                System.out.println("#-Log\t: New client connected");
                 ClientHandler clientHandler = new ClientHandler(socket);
                 Thread thread = new Thread(clientHandler);
                 thread.start();
