@@ -3,16 +3,16 @@ import java.net.*;
 import java.util.Scanner;
 
 public class Client {
-    private Socket socket;
-    private BufferedReader bufferedReader;
-    private BufferedWriter bufferedWriter;
+    private static Socket socket;
+    private static BufferedReader bufferedReader;
+    private static BufferedWriter bufferedWriter;
     private String userName;
 
     public Client(Socket socket, String username) {
         try {
-            this.socket = socket;
-            this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            Client.socket = socket;
+            Client.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            Client.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.userName = username;
         } catch (IOException e) {
             e.printStackTrace();
@@ -22,25 +22,37 @@ public class Client {
 
     public void sendMessage() {
         // Prevent the main thread from blocking
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    bufferedWriter.write(userName);
-                    bufferedWriter.newLine();
-                    bufferedWriter.flush();
-                    Scanner scanner = new Scanner(System.in);
-                    while (socket.isConnected()) {
-                        String messageToSend = scanner.nextLine();
-                        bufferedWriter.write(messageToSend);
-                        bufferedWriter.newLine();
-                        bufferedWriter.flush();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        try {
+            bufferedWriter.write(userName);
+            bufferedWriter.newLine();
+            bufferedWriter.flush();
+            Scanner scanner = new Scanner(System.in);
+            while (socket.isConnected()) {
+                String messageToSend = scanner.nextLine();
+                bufferedWriter.write(messageToSend);
+                bufferedWriter.newLine();
+                bufferedWriter.flush();
             }
-        }).start();
+            scanner.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendMessage(String message) {
+        // Prevent the main thread from blocking
+        if (socket.isConnected()) {
+            try {
+                bufferedWriter.write(message);
+                bufferedWriter.newLine();
+                bufferedWriter.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        } else {
+            System.out.println("Connection lost. Please reconnect.");
+        }
 
     }
 
@@ -63,7 +75,7 @@ public class Client {
         }).start();
     }
 
-    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
+    public static void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
         try {
             if (bufferedReader != null)
                 bufferedReader.close();
@@ -79,31 +91,39 @@ public class Client {
         }
     }
 
-    public static void main(String[] args) throws IOException {
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter username: ");
-        String username = scanner.nextLine();
-        Socket socket = null;
-        Client client = null;
-        while (true) {
-            // Check for connection
-            try {
-                socket = new Socket("localhost", 5500);
-                client = new Client(socket, username);
-            } catch (IOException e) {
-                e.printStackTrace();
-                client.closeEverything(socket, client.bufferedReader, client.bufferedWriter);
-                System.out.println("Connection lost. Retrying...");
-                // Sleep for 5 seconds before retrying
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException ex) {
-                    ex.printStackTrace();
-                }
-                continue;
-            }
-            client.listenForMessage();
-            client.sendMessage();
-        }
+    public BufferedReader getBufferedReader() {
+        return bufferedReader;
     }
+
+    public BufferedWriter getBufferedWriter() {
+        return bufferedWriter;
+    }
+
+    // public static void main(String[] args) throws IOException {
+    // Scanner scanner = new Scanner(System.in);
+    // System.out.print("Enter username: ");
+    // String username = scanner.nextLine();
+    // Client client;
+    // while (true) {
+    // // Check for connection
+    // try {
+    // socket = new Socket("localhost", 5500);
+    // client = new Client(socket, username);
+    // } catch (ConnectException e) {
+    // e.printStackTrace();
+    // closeEverything(socket, bufferedReader, bufferedWriter);
+    // System.out.println("Connection lost. Retrying...");
+    // // Sleep for 5 seconds before retrying
+    // try {
+    // Thread.sleep(2000);
+    // } catch (InterruptedException ex) {
+    // ex.printStackTrace();
+    // }
+    // continue;
+    // }
+    // client.listenForMessage();
+
+    // client.sendMessage();
+    // }
+    // }
 }

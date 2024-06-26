@@ -5,14 +5,16 @@ import java.util.Scanner;
 import java.net.Socket;
 
 public class ClientHandler implements Runnable {
-
+    
     public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
     private Socket socket;
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
     private String clientUserName;
+    private String clientIP;
+    private int clientPort;
 
-    public void listenForMessage(String clientUserName) {
+    public void listenForMessage(String clientUserName, String clientIP, int clientPort) {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -22,11 +24,11 @@ public class ClientHandler implements Runnable {
                         messageFromClient = bufferedReader.readLine();
                         broadcastMessage(clientUserName + ": " + messageFromClient);
                         // update log
-                        ServerUI.updateLog(clientUserName + ": " + messageFromClient);
+                        ServerUI.updateLog( clientIP + ":"+ clientPort + " @" + clientUserName + ": " + messageFromClient);
                     } catch (IOException e) {
                         e.printStackTrace();
                         closeEverything(socket, bufferedReader, bufferedWriter);
-                        break;  
+                        break; 
                     }
                 }
             }
@@ -43,8 +45,10 @@ public class ClientHandler implements Runnable {
                 bufferedWriter.newLine();
                 bufferedWriter.flush();
             }
+            scanner.close();
         } catch (IOException e) {
             e.printStackTrace();
+            
             closeEverything(socket, bufferedReader, bufferedWriter);
         }
     }
@@ -71,8 +75,19 @@ public class ClientHandler implements Runnable {
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.clientUserName = bufferedReader.readLine();
+            this.clientIP = socket.getInetAddress().getHostAddress();
+            this.clientPort = socket.getPort();
+            // Add client to list
             clientHandlers.add(this);
-            broadcastMessage("%-Server: " + this.clientUserName + " has joined the chat");
+            broadcastMessage("%-Server: @" + this.clientUserName + " has joined the chat");
+            ServerUI.updateLog("#-Log: "  + this.clientIP + ":" + this.clientPort + " @" + this.clientUserName 
+                    + " has joined the chat");
+
+            // Populate combo box with active clients
+            populateComboBox();
+
+            // Update active clients count
+            ServerUI.updateActiveClientsCount(clientHandlers.size());
         } catch (IOException e) {
             e.printStackTrace();
             closeEverything(socket, bufferedReader, bufferedWriter);
@@ -81,7 +96,12 @@ public class ClientHandler implements Runnable {
 
     public void removeClientHandler() {
         clientHandlers.remove(this);
-        broadcastMessage("%-Server: " + clientUserName + " has left the chat");
+        broadcastMessage("%-Server: @" + this.clientUserName + " has left the chat");
+        ServerUI.updateLog("#-Log: " + this.clientIP + ":" + this.clientPort + " @" + this.clientUserName + " has left the chat");
+        // Populate combo box with active clients
+        populateComboBox();
+        // Update active clients count
+        ServerUI.updateActiveClientsCount(clientHandlers.size());
     }
 
     public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
@@ -101,12 +121,26 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    // Populate combo box with active clients
+    public static void populateComboBox() {
+        ServerUI.clearClients();
+        for (ClientHandler clientHandler : clientHandlers) {
+            ServerUI.addClients(clientHandler.clientUserName);
+        }
+    }
+
+    public BufferedReader getBufferedReader() {
+        return this.bufferedReader;
+    }
+
+    public BufferedWriter getBufferedWriter() {
+        return this.bufferedWriter;
+    }
+
     @Override
     public void run() {
-
-        listenForMessage(this.clientUserName);
+        listenForMessage(this.clientUserName, this.clientIP, this.clientPort);
         sendMessage();
-
     }
 
 }
