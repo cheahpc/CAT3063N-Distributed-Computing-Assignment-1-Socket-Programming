@@ -38,12 +38,13 @@ public class ServerUI extends JFrame {
 
     public ServerUI() {
         jFrame = new JFrame("Chat Server");
-        jFrame.setSize(1100, 600);
+        jFrame.setSize(900, 600);
         jFrame.setLocationRelativeTo(null);
         jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         jPanel = new JPanel();
         jPanel.setLayout(new GridBagLayout());
+        jPanel.setBackground(java.awt.Color.lightGray);
 
         // Create components
         lblServerIP = new JLabel("Server IP:");
@@ -54,6 +55,7 @@ public class ServerUI extends JFrame {
         lblServerLog = new JLabel("Server Log:");
         lblServerStatus = new JLabel("Server Status:");
         lblServerStatusValue = new JLabel("Offline");
+        lblServerStatusValue.setForeground(java.awt.Color.RED);
         lblActiveClientsCount = new JLabel("0");
         try {
             lblServerIPValue = new JLabel(InetAddress.getLocalHost().getHostAddress());
@@ -142,6 +144,7 @@ public class ServerUI extends JFrame {
                     // Close server
                     server.endServer();
                     lblServerStatusValue.setText("Offline");
+                    lblServerStatusValue.setForeground(java.awt.Color.RED);
                     updateLog("#-Log: Server stopped");
                 }
 
@@ -164,6 +167,7 @@ public class ServerUI extends JFrame {
                 updateLog("#-Log: Server started on: " + lblServerIPValue.getText() + ":"
                         + txtFieldServerPort.getText());
                 lblServerStatusValue.setText("Online");
+                lblServerStatusValue.setForeground(java.awt.Color.GREEN);
             }
         });
 
@@ -178,6 +182,7 @@ public class ServerUI extends JFrame {
                 // Close Server
                 server.endServer();
                 lblServerStatusValue.setText("Offline");
+                lblServerStatusValue.setForeground(java.awt.Color.RED);
                 updateLog("#-Log: Server ended");
 
             }

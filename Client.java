@@ -47,7 +47,6 @@ public class Client {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     public void listenForMessage() {
@@ -68,6 +67,7 @@ public class Client {
                         closeEverything(socket, bufferedReader, bufferedWriter);
                         ClientUI.updateMessageLog("Connection lost.");
                         ClientUI.lblServerStatus.setText("Server: Disconnected");
+                        ClientUI.lblServerStatus.setForeground(java.awt.Color.RED);
                         ClientUI.btnConnect.setEnabled(true);
                         ClientUI.btnSend.setEnabled(false);
                         ClientUI.txtFieldMessageBox.setEnabled(false);

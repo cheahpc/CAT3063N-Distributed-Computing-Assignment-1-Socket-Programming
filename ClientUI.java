@@ -40,12 +40,13 @@ public class ClientUI extends JFrame {
 
     public ClientUI() {
         jFrame = new JFrame("Chat Client");
-        jFrame.setSize(1100, 600);
+        jFrame.setSize(900, 550);
         jFrame.setLocationRelativeTo(null);
         jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         jPanel = new JPanel();
         jPanel.setLayout(new GridBagLayout());
+        jPanel.setBackground(java.awt.Color.lightGray);
 
         // Create components
         lblTargetIP = new JLabel("Target IP:");
@@ -57,6 +58,8 @@ public class ClientUI extends JFrame {
             e.printStackTrace();
         }
         lblServerStatus = new JLabel("Server: Disconnected");
+        lblServerStatus.setForeground(java.awt.Color.RED);
+
         lblMessages = new JLabel("Messages:");
 
         txtFieldTargetIP = new JTextField("127.0.0.1", 16);
@@ -148,6 +151,7 @@ public class ClientUI extends JFrame {
                 try {
                     socket = new Socket("localhost", port);
                     lblServerStatus.setText("Server: Connected");
+                    lblServerStatus.setForeground(java.awt.Color.GREEN);
                     btnConnect.setEnabled(false);
                     btnSend.setEnabled(true);
                     txtFieldMessageBox.setEnabled(true);
@@ -155,6 +159,7 @@ public class ClientUI extends JFrame {
                     e1.printStackTrace();
                     System.out.println("Connection lost. Retrying...");
                     lblServerStatus.setText("Server: Disconnected");
+                    lblServerStatus.setForeground(java.awt.Color.RED);
                     btnConnect.setEnabled(true);
                     btnSend.setEnabled(false);
                     txtFieldMessageBox.setEnabled(false);
@@ -170,7 +175,6 @@ public class ClientUI extends JFrame {
                 } catch (UnknownHostException e1) {
                     e1.printStackTrace();
                 }
-
             }
         });
 
@@ -185,7 +189,6 @@ public class ClientUI extends JFrame {
                 }
             }
         });
-
     }
 
     public static void updateMessageLog(String message) {
