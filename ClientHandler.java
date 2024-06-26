@@ -21,6 +21,8 @@ public class ClientHandler implements Runnable {
                     try {
                         messageFromClient = bufferedReader.readLine();
                         broadcastMessage(clientUserName + ": " + messageFromClient);
+                        // update log
+                        ServerUI.updateLog(clientUserName + ": " + messageFromClient);
                     } catch (IOException e) {
                         e.printStackTrace();
                         closeEverything(socket, bufferedReader, bufferedWriter);

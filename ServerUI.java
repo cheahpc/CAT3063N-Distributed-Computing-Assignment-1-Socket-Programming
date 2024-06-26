@@ -7,8 +7,7 @@ import java.io.*;
 
 public class ServerUI extends JFrame {
     private ServerSocket serverSocket;
-    private Socket socket = null;
-    private DataInputStream in = null;
+    private Server server;
 
     private int connectionCount = 0;
 
@@ -18,11 +17,12 @@ public class ServerUI extends JFrame {
     private JTextField txtFieldServerPort, txtFieldTotalClients, txtFieldMessage;
     private JButton btnChange, btnSend;
     private JComboBox<String> cmbClients;
-    private JTextArea txtAreaServerLog;
+    private static JTextArea txtAreaServerLog;
     private JScrollPane scroll;
     private GridBagConstraints gbConstraints;
 
-    private GridBagConstraints setGBC(int x, int y, int px, int py, int gWidth, int gHeight, int to, int le, int bo, int ri) {
+    private GridBagConstraints setGBC(int x, int y, int px, int py, int gWidth, int gHeight, int to, int le, int bo,
+            int ri) {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = x;
         gbc.gridy = y;
@@ -129,20 +129,28 @@ public class ServerUI extends JFrame {
                     updateLog("#-Log: Default server port used (5500)");
                 }
                 // Check if server is already started
-                if (server.isRunning()) {
+                if (serverSocket != null && !serverSocket.isClosed()) {
                     // Close server
-                    server.closeEverything
-                
+                    try {
+                        serverSocket.close();
+                        updateLog("#-Log: Server stopped");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
-                try {
-                    serverSocket = new ServerSocket(5000);
-                    Server server = new Server(serverSocket);
-                    server.startServer();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                // Start server without interupting UI refreh
+                new Thread(new Runnable() {
+                    public void run() {
+                        try {
+                            serverSocket = new ServerSocket(Integer.parseInt(txtFieldServerPort.getText()));
+                            server = new Server(serverSocket);
+                            server.startServer();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
             }
-
         });
 
         // Add key listeners
@@ -159,12 +167,15 @@ public class ServerUI extends JFrame {
         });
     }
 
-    public void clearLog() {
-        txtAreaServerLog.setText("");
+    public static void clearLog() {
+        ServerUI.txtAreaServerLog.setText("");
     }
 
-    public void updateLog(String message) {
-        txtAreaServerLog.append(message + "\n");
+    public static void updateLog(String message) {
+        // Get date and time up to milliseconds
+        java.util.Date date = new java.util.Date();
+        java.sql.Timestamp timestamp = new java.sql.Timestamp(date.getTime());
+        ServerUI.txtAreaServerLog.append(timestamp + " " + message + "\n");
     }
 
     public void updateTotalClients(int count) {

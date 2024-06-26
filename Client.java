@@ -50,6 +50,8 @@ public class Client {
                     } catch (IOException e) {
                         e.printStackTrace();
                         closeEverything(socket, bufferedReader, bufferedWriter);
+                        System.out.println("Server error");
+                        break;
                     }
                 }
             }
@@ -76,7 +78,7 @@ public class Client {
         Scanner scanner = new Scanner(System.in);
         System.out.print("Enter username: ");
         String username = scanner.nextLine();
-        Socket socket = new Socket("localhost", 5000);
+        Socket socket = new Socket("localhost", 5500);
         Client client = new Client(socket, username);
         client.listenForMessage();
         client.sendMessage();

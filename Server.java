@@ -44,9 +44,9 @@ public class Server {
     public boolean isRunning() {
         return !serverSocket.isClosed();
     }
-    public static void main(String[] args) throws IOException {
-        ServerSocket serverSocket = new ServerSocket(5000);
-        Server server = new Server(serverSocket);
-        server.startServer();
-    }
+    // public static void main(String[] args) throws IOException {
+        // ServerSocket serverSocket = new ServerSocket(5000);
+        // Server server = new Server(serverSocket);
+        // server.startServer();
+    // }
 }
