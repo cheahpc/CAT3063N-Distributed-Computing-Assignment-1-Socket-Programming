@@ -2,15 +2,15 @@ import java.io.*;
 import java.net.*;
 
 public class Client {
-    private static Socket socket;
-    private static BufferedReader bufferedReader;
-    private static BufferedWriter bufferedWriter;
+    private Socket socket;
+    private BufferedReader bufferedReader;
+    private BufferedWriter bufferedWriter;
 
     public Client(Socket socket) {
         try {
-            Client.socket = socket;
-            Client.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            Client.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            this.socket = socket;
+            bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
         } catch (IOException e) {
             e.printStackTrace();
             releaseResources(socket, bufferedReader, bufferedWriter);
@@ -64,7 +64,7 @@ public class Client {
         }).start();
     }
 
-    public static void releaseResources(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
+    public void releaseResources(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
         try {
             if (bufferedReader != null)
                 bufferedReader.close();
@@ -84,7 +84,6 @@ public class Client {
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
-
         }
     }
 }
