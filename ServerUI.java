@@ -14,13 +14,14 @@ public class ServerUI extends JFrame {
     private JLabel lblServerIP, lblServerIPValue, lblServerPort, lblTotalClients, lblMessageTo, lblMessage,
             lblServerLog, lblServerStatus;
     private static JLabel lblServerStatusValue, lblActiveClientsCount;
-    private JTextField txtFieldServerPort;
-    private static JTextField txtFieldMessage;
-    private JButton btnStart, btnClear;
-    private static JButton btnStop, btnSend, btnRemove;
+    private static JTextField txtFieldMessage, txtFieldServerPort;
+    private JButton btnClear;
+    private static JButton btnStartStop, btnSend, btnRemove;
     private static JComboBox<String> cmbClients;
     private static JTextArea txtAreaServerLog;
     private JScrollPane scroll;
+
+    private static boolean serverOnline = false;
 
     private GridBagConstraints setGBC(int x, int y, int px, int py, int gWidth, int gHeight, int to, int le, int bo,
             int ri) {
@@ -61,8 +62,7 @@ public class ServerUI extends JFrame {
 
         cmbClients = new JComboBox<String>();
 
-        btnStart = new JButton("Start");
-        btnStop = new JButton("Stop");
+        btnStartStop = new JButton("Start");
         btnSend = new JButton("Send");
         btnRemove = new JButton("Remove");
         btnClear = new JButton("Clear");
@@ -70,7 +70,7 @@ public class ServerUI extends JFrame {
     }
 
     private void uiSettings() {
-        jFrame.setSize(900, 600);
+        jFrame.setSize(950, 650);
         jFrame.setLocationRelativeTo(null);
         jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -99,17 +99,16 @@ public class ServerUI extends JFrame {
         txtAreaServerLog.setFont(txtAreaServerLog.getFont().deriveFont(16.0f));
         cmbClients.setFont(cmbClients.getFont().deriveFont(16.0f));
 
-        btnStart.setFont(btnStart.getFont().deriveFont(16.0f));
-        btnStop.setFont(btnStop.getFont().deriveFont(16.0f));
+        btnStartStop.setFont(btnStartStop.getFont().deriveFont(16.0f));
         btnSend.setFont(btnSend.getFont().deriveFont(16.0f));
         btnRemove.setFont(btnRemove.getFont().deriveFont(16.0f));
         btnClear.setFont(btnClear.getFont().deriveFont(16.0f));
 
         // Set remove and stop button to red
         btnRemove.setBackground(java.awt.Color.RED);
-        btnStop.setBackground(java.awt.Color.RED);
         btnRemove.setForeground(java.awt.Color.WHITE);
-        btnStop.setForeground(java.awt.Color.WHITE);
+        btnStartStop.setBackground(java.awt.Color.blue);
+        btnStartStop.setForeground(java.awt.Color.WHITE);
 
         // Set button properties
         setClientAvailable(false);
@@ -122,8 +121,7 @@ public class ServerUI extends JFrame {
         jPanel.add(lblServerIPValue, setGBC(1, 0, 0, 5, 1, 1, 0, 5, 0, 0));
         jPanel.add(lblServerPort, setGBC(2, 0, 0, 5, 1, 1, 0, 15, 0, 0));
         jPanel.add(txtFieldServerPort, setGBC(3, 0, 0, 5, 1, 1, 0, 5, 0, 0));
-        jPanel.add(btnStart, setGBC(4, 0, 0, 5, 1, 1, 0, 5, 0, 0));
-        jPanel.add(btnStop, setGBC(5, 0, 0, 5, 1, 1, 0, 5, 0, 0));
+        jPanel.add(btnStartStop, setGBC(4, 0, 0, 5, 2, 1, 0, 5, 0, 0));
 
         jPanel.add(lblTotalClients, setGBC(0, 1, 0, 5, 1, 1, 10, 0, 0, 0));
         jPanel.add(lblActiveClientsCount, setGBC(1, 1, 0, 5, 1, 1, 10, 0, 0, 0));
@@ -168,56 +166,54 @@ public class ServerUI extends JFrame {
         jFrame.add(jPanel);
         jFrame.setVisible(true);
         // Add action listeners
-        btnStart.addActionListener(new ActionListener() {
+        btnStartStop.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent ae) {
-                String sPort = txtFieldServerPort.getText();
-
-                // Check port field
-                if (sPort.equals("")) {
-                    logAppend("#-Log: Default server port used (8888)");
-                    txtFieldServerPort.setText("8888");
-                    sPort = "8888";
-                } else if (Integer.parseInt(sPort) > 65535 || Integer.parseInt(sPort) < 1024) {
-                    logAppend("#-Log: Please enter a valid port number (1024-65535)");
-                    return;
-                }
-
-                // Start Server
-                // Get server IP address
-                String sIP = Server.getServerIP();
-
-                // Step 1: Check if server socket already exists
-                if (serverSocket != null && serverSocket.isBound()) {
+                if (serverOnline) {
                     server.endServer();
-                    setServerOnline(false);
-                    logAppend("#-Log: Server ended");
-                }
+                } else {
+                    String sPort = txtFieldServerPort.getText();
 
-                // Step 2: Try to create server socket (Essentially starting the server)
-                ServerUI.logAppend("#-Log: Creating server...");
-                try {
-                    serverSocket = new ServerSocket(Integer.parseInt(sPort));
-                    ServerUI.setServerOnline(true);
-                    ServerUI.logAppend("#-Log: Socket created successfully.");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    ServerUI.logAppend("#-Log: Port number already in use. Please try another port number.");
+                    // Check port field
+                    if (sPort.equals("")) {
+                        logAppend("#-Log: Default server port used (8888)");
+                        txtFieldServerPort.setText("8888");
+                        sPort = "8888";
+                    } else if (Integer.parseInt(sPort) > 65535 || Integer.parseInt(sPort) < 1024) {
+                        logAppend("#-Log: Please enter a valid port number (1024-65535)");
+                        return;
+                    }
+
+                    // Start Server
+                    // Get server IP address
+                    String sIP = Server.getServerIP();
+
+                    // Step 1: Check if server socket already exists
+                    if (serverSocket != null && serverSocket.isBound()) {
+                        server.endServer();
+                        setServerOnline(false);
+                        logAppend("#-Log: Server ended");
+                    }
+
+                    // Step 2: Try to create server socket (Essentially starting the server)
+                    ServerUI.logAppend("#-Log: Starting server...");
+                    try {
+                        serverSocket = new ServerSocket(Integer.parseInt(sPort));
+                        ServerUI.setServerOnline(true);
+                        ServerUI.logAppend("#-Log: Socket created successfully.");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        ServerUI.logAppend("#-Log: Port number already in use. Please try another port number.");
+                        return;
+                    }
+
+                    // Step 3: Handle connections
+                    server = new Server(serverSocket);
+                    server.initializeServer();
+
+                    // Step 4: Update UI
+                    ServerUI.logAppend("#-Log: Server started on:" + sIP + ":" + sPort);
                     return;
                 }
-
-                // Step 3: Handle connections
-                server = new Server(serverSocket);
-                server.initializeServer();
-
-                // Step 4: Update UI
-                ServerUI.logAppend("#-Log: Server started on:" + sIP + ":" + sPort);
-
-            }
-        });
-
-        btnStop.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent ae) {
-                server.endServer();
             }
         });
 
@@ -229,7 +225,6 @@ public class ServerUI extends JFrame {
                     server.removeAllClients();
                 else
                     server.removeClient(clientName);
-
             }
         });
 
@@ -262,7 +257,6 @@ public class ServerUI extends JFrame {
                     evt.consume();
                 }
             }
-
         });
 
     }
@@ -283,15 +277,19 @@ public class ServerUI extends JFrame {
 
     public static void setServerOnline(boolean status) {
         if (status) {
+            serverOnline = true;
             lblServerStatusValue.setText("Online");
             lblServerStatusValue.setForeground(java.awt.Color.GREEN);
-            btnStop.setEnabled(true);
-            btnStop.setBackground(java.awt.Color.RED);
+            txtFieldServerPort.setEnabled(false);
+            btnStartStop.setText("Stop");
+            btnStartStop.setBackground(java.awt.Color.RED);
         } else {
+            serverOnline = false;
             lblServerStatusValue.setText("Offline");
             lblServerStatusValue.setForeground(java.awt.Color.RED);
-            btnStop.setEnabled(false);
-            btnStop.setBackground(null);
+            txtFieldServerPort.setEnabled(true);
+            btnStartStop.setText("Start");
+            btnStartStop.setBackground(java.awt.Color.BLUE);
         }
     }
 

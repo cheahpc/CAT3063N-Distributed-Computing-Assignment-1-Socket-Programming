@@ -55,8 +55,8 @@ public class Client {
                     } catch (IOException e) {
                         e.printStackTrace();
                         releaseResources(socket, bufferedReader, bufferedWriter);
-                        ClientUI.logAppend("#-System: Connection lost.");
-                        ClientUI.setServerOnline(false);
+                        ClientUI.logAppend("#-System: Disconnected from server.");
+                        ClientUI.setServerConnected(false);
                         break;
                     }
                 }
@@ -76,6 +76,15 @@ public class Client {
                 socket.close();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public void closeConnection() {
+        try {
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+
         }
     }
 }

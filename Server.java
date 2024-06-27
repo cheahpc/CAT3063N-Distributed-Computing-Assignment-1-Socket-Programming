@@ -51,7 +51,6 @@ public class Server {
             removeAllClients();
         try {
             serverSocket.close();
-            ServerUI.logAppend("#-Log: Server offline.");
             ServerUI.setServerOnline(false);
         } catch (IOException e) {
             e.printStackTrace();
