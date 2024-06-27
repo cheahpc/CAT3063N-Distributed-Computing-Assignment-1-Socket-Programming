@@ -11,15 +11,12 @@ public class ClientUI extends JFrame {
 
     private JFrame jFrame;
     private JPanel jPanel;
-    private JLabel lblTargetIP, lblTargetPort, lblUserName;
-    static JLabel lblMyAddress;
-    private JLabel lblMessages;
-    static JLabel lblServerStatus;
+    private JLabel lblTargetIP, lblTargetPort, lblUserName, lblMessages;
+    private static JLabel lblMyAddress, lblServerStatus;
     private JTextField txtFieldTargetIP, txtFieldTargetPort, txtFieldUsername;
-    static JTextField txtFieldMessageBox;
-    static JButton btnConnect;
+    private static JTextField txtFieldMessageBox;
     private JButton btnClear;
-    static JButton btnSend;
+    private static JButton btnConnect, btnSend;
 
     private static JTextArea txtAreaMessage;
     private JScrollPane scroll;
@@ -38,33 +35,21 @@ public class ClientUI extends JFrame {
         return gbc;
     }
 
-    public ClientUI() {
-        jFrame = new JFrame("Chat Client");
-        jFrame.setSize(900, 550);
-        jFrame.setLocationRelativeTo(null);
-        jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
+    private void uiCreate() {
+        jFrame = new JFrame("PC.Chat (Client) Developed by: @Pin Chee Ver1.0");
         jPanel = new JPanel();
-        jPanel.setLayout(new GridBagLayout());
-        jPanel.setBackground(java.awt.Color.lightGray);
 
-        // Create components
         lblTargetIP = new JLabel("Target IP:");
         lblTargetPort = new JLabel("Target Port:");
-        lblUserName = new JLabel("Username:");
-        try {
-            lblMyAddress = new JLabel("My Address: " + InetAddress.getLocalHost().getHostAddress() + ":?");
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
+        lblUserName = new JLabel("User Name:");
+        lblMyAddress = new JLabel("My Address: " + Client.getClientIP() + ":?");
         lblServerStatus = new JLabel("Server: Disconnected");
-        lblServerStatus.setForeground(java.awt.Color.RED);
 
         lblMessages = new JLabel("Messages:");
 
-        txtFieldTargetIP = new JTextField("127.0.0.1", 16);
-        txtFieldTargetPort = new JTextField("5500", 10);
-        txtFieldUsername = new JTextField("Ana", 25);
+        txtFieldTargetIP = new JTextField("", 16);
+        txtFieldTargetPort = new JTextField("", 10);
+        txtFieldUsername = new JTextField("", 25);
         txtFieldMessageBox = new JTextField();
 
         txtAreaMessage = new JTextArea(16, 60);
@@ -73,9 +58,21 @@ public class ClientUI extends JFrame {
         btnSend = new JButton("Send");
         btnClear = new JButton("Clear");
 
-        btnSend.setEnabled(false);
-
         scroll = new JScrollPane(txtAreaMessage);
+    }
+
+    private void uiSettings() {
+        jFrame.setSize(900, 600);
+        jFrame.setLocationRelativeTo(null);
+        jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        jPanel.setLayout(new GridBagLayout());
+        jPanel.setBackground(java.awt.Color.lightGray);
+
+        lblServerStatus.setForeground(java.awt.Color.RED);
+
+        txtAreaMessage.setEditable(false);
+        scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
         // Set font size
         lblTargetIP.setFont(lblTargetIP.getFont().deriveFont(16.0f));
@@ -91,11 +88,9 @@ public class ClientUI extends JFrame {
         txtFieldMessageBox.setFont(txtFieldMessageBox.getFont().deriveFont(16.0f));
 
         txtAreaMessage.setFont(txtAreaMessage.getFont().deriveFont(16.0f));
+    }
 
-        // Set scroll bar policy
-        txtAreaMessage.setEditable(false);
-        scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-
+    private void uiAdd() {
         // Add components to panel
         jPanel.add(lblTargetIP, setGBC(0, 0, 0, 5, 1, 1, 0, 5, 0, 0));
         jPanel.add(lblTargetPort, setGBC(1, 0, 0, 5, 1, 1, 0, 5, 0, 0));
@@ -118,13 +113,78 @@ public class ClientUI extends JFrame {
         jPanel.add(btnSend, setGBC(3, 5, 0, 5, 1, 1, 0, 5, 0, 0));
 
         jFrame.add(jPanel);
-        jFrame.setVisible(true);
+    }
 
+    private void actSend() {
+        String message = txtFieldMessageBox.getText();
+        if (!message.isEmpty()) {
+            logAppend("@You: " + message);
+            client.sendMessage(message);
+            txtFieldMessageBox.setText("");
+        }
+    }
+
+    private void checkFields() {
+        if (txtFieldTargetIP.getText().isEmpty()) {
+            logAppend("#-System: Target IP is set to default Localhost IP (127.0.0.1)");
+            txtFieldTargetIP.setText("127.0.0.1");
+        }
+
+        if (txtFieldTargetPort.getText().isEmpty()) {
+            logAppend("#-System: Target Port is set to default port (8888)");
+            txtFieldTargetPort.setText("8888");
+        }
+
+        if (txtFieldUsername.getText().isEmpty()) {
+            logAppend("#-System: Username is set to default (Anonymous)");
+            txtFieldUsername.setText("Anonymous");
+        }
+
+    }
+
+    public ClientUI() {
+        uiCreate();
+        uiSettings();
+        uiAdd();
+
+        jFrame.setVisible(true);
         // Add action listeners
+        btnConnect.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Step 1: Check for empty fields
+                checkFields();
+                // Step 2: Get values from text fields
+                String username = txtFieldUsername.getText();
+                int port = Integer.parseInt(txtFieldTargetPort.getText());
+                // Step 3: Connect to server
+                logAppend("#-System: Connecting to server...");
+                try {
+                    socket = new Socket("localhost", port);
+                    setServerOnline(true);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                    logAppend("#-System: Connection failed. Server not found.");
+                    setServerOnline(false);
+                    return;
+                }
+                client = new Client(socket);
+                String userID = Client.getClientIP() + ":" + client.getClientPort() + " @" + username;
+                client.sendMessage(userID);
+
+                // Step 4: Listen for messages
+                client.listenForMessage();
+
+                // Step 5: Update status
+                logAppend("#-System: Connected to server. Enjoy chatting!");
+                lblMyAddress.setText("My Address: " + Client.getClientIP() + ":" + client.getClientPort());
+            }
+        });
+
         btnClear.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                txtAreaMessage.setText("");
+                logClear();
             }
         });
 
@@ -132,67 +192,43 @@ public class ClientUI extends JFrame {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    String message = txtFieldMessageBox.getText();
-                    if (!message.isEmpty()) {
-                        updateMessageLog("You: " + message);
-                        client.sendMessage(message);
-                        txtFieldMessageBox.setText("");
-                    }
+                    actSend();
                 }
-            }
-        });
 
-        btnConnect.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String username = txtFieldUsername.getText();
-                int port = Integer.parseInt(txtFieldTargetPort.getText());
-                // Check for connection
-                try {
-                    socket = new Socket("localhost", port);
-                    lblServerStatus.setText("Server: Connected");
-                    lblServerStatus.setForeground(java.awt.Color.GREEN);
-                    btnConnect.setEnabled(false);
-                    btnSend.setEnabled(true);
-                    txtFieldMessageBox.setEnabled(true);
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                    System.out.println("Connection lost. Retrying...");
-                    lblServerStatus.setText("Server: Disconnected");
-                    lblServerStatus.setForeground(java.awt.Color.RED);
-                    btnConnect.setEnabled(true);
-                    btnSend.setEnabled(false);
-                    txtFieldMessageBox.setEnabled(false);
-                }
-                client = new Client(socket, username);
-                client.sendMessage(username);
-                client.listenForMessage();
-
-                // get output port
-                try {
-                    lblMyAddress.setText("My Address: " + InetAddress.getLocalHost().getHostAddress() + ":"
-                            + socket.getLocalPort());
-                } catch (UnknownHostException e1) {
-                    e1.printStackTrace();
-                }
             }
         });
 
         btnSend.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String message = txtFieldMessageBox.getText();
-                if (!message.isEmpty()) {
-                    updateMessageLog("You: " + message);
-                    client.sendMessage(message);
-                    txtFieldMessageBox.setText("");
-                }
+                actSend();
             }
+
         });
     }
 
-    public static void updateMessageLog(String message) {
+    public static void logClear() {
+        txtAreaMessage.setText("");
+    }
+
+    public static void logAppend(String message) {
         txtAreaMessage.append(message + "\n");
+    }
+
+    public static void setServerOnline(boolean isOnline) {
+        if (isOnline) {
+            lblServerStatus.setText("Server: Connected");
+            lblServerStatus.setForeground(java.awt.Color.GREEN);
+            btnConnect.setEnabled(false);
+            btnSend.setEnabled(true);
+            txtFieldMessageBox.setEnabled(true);
+        } else {
+            lblServerStatus.setText("Server: Disconnected");
+            lblServerStatus.setForeground(java.awt.Color.RED);
+            btnConnect.setEnabled(true);
+            btnSend.setEnabled(false);
+            txtFieldMessageBox.setEnabled(false);
+        }
     }
 
     public static void main(String[] args) {

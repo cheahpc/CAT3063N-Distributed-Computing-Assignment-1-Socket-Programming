@@ -5,73 +5,13 @@ import java.net.Socket;
 
 public class ClientHandler implements Runnable {
 
-    public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
+    public static ArrayList<ClientHandler> clientList = new ArrayList<>();
     private Socket socket;
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
     private String clientUserName;
     private String clientIP;
     private int clientPort;
-
-    public void listenForMessage(String clientUserName, String clientIP, int clientPort) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String messageFromClient;
-                while (!socket.isClosed()) {
-                    try {
-                        messageFromClient = bufferedReader.readLine();
-                        if (messageFromClient == null) {
-                            throw new IOException();
-                        }
-                        broadcastMessage("@" + clientUserName + ": " + messageFromClient, false);
-                        // update log
-                        ServerUI.updateLog(
-                                clientIP + ":" + clientPort + " @" + clientUserName + ": " + messageFromClient);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        closeEverything(socket, bufferedReader, bufferedWriter);
-                        break;
-                    }
-                }
-            }
-        }).start();
-    }
-
-    public String getClientName() {
-        return this.clientUserName;
-    }
-
-    public void sendMessage(String messageToSend, String target) {
-        for (ClientHandler clientHandler : clientHandlers) {
-            try {
-                if (clientHandler.clientUserName.equals(target)) {
-                    clientHandler.bufferedWriter.write(messageToSend);
-                    clientHandler.bufferedWriter.newLine();
-                    clientHandler.bufferedWriter.flush();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                closeEverything(clientHandler.socket, clientHandler.bufferedReader, clientHandler.bufferedWriter);
-            }
-        }
-    }
-
-    public void broadcastMessage(String messageToSend, boolean isServerMessage) {
-        for (ClientHandler clientHandler : clientHandlers) {
-            try {
-                if (!clientHandler.clientUserName.equals(clientUserName) || isServerMessage) {
-                    clientHandler.bufferedWriter.write(messageToSend);
-                    clientHandler.bufferedWriter.newLine();
-                    clientHandler.bufferedWriter.flush();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                closeEverything(clientHandler.socket, clientHandler.bufferedReader, clientHandler.bufferedWriter);
-            }
-        }
-        System.out.println(messageToSend);
-    }
 
     public ClientHandler(Socket socket) {
         try {
@@ -82,53 +22,93 @@ public class ClientHandler implements Runnable {
             this.clientIP = socket.getInetAddress().getHostAddress();
             this.clientPort = socket.getPort();
             // Add client to list
-            clientHandlers.add(this);
+            clientList.add(this);
             broadcastMessage("@Server: " + this.clientUserName + " has joined the chat", true);
-            ServerUI.updateLog("#-Log: " + this.clientIP + ":" + this.clientPort + " @" + this.clientUserName
-                    + " has joined the chat");
-
-            refreshConnectedClients();
+            ServerUI.logAppend("#-Log: " + this.clientUserName + " has joined the chat");
         } catch (IOException e) {
             e.printStackTrace();
-            closeEverything(socket, bufferedReader, bufferedWriter);
+            releaseResources(socket, bufferedReader, bufferedWriter);
+        }
+        updateUIConnectedClients();
+    }
+
+    public Socket getSocket() {
+        return this.socket;
+    }
+
+    public String getClientName() {
+        return this.clientUserName;
+    }
+
+    public void listenForMessage(String clientUserName, String clientIP, int clientPort) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String messageFromClient;
+                while (!socket.isClosed()) {
+                    try {
+                        messageFromClient = bufferedReader.readLine();
+                        if (messageFromClient == null)
+                            throw new IOException();
+
+                        broadcastMessage(clientUserName + ": " + messageFromClient, false);
+                        ServerUI.logAppend("#" + clientUserName + ": " + messageFromClient);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        releaseResources(socket, bufferedReader, bufferedWriter);
+                        break;
+                    }
+                }
+            }
+        }).start();
+    }
+
+    public void sendMessage(String messageToSend, String target) {
+        for (ClientHandler clientHandler : clientList) {
+            try {
+                if (clientHandler.clientUserName.equals(target)) {
+                    clientHandler.bufferedWriter.write(messageToSend);
+                    clientHandler.bufferedWriter.newLine();
+                    clientHandler.bufferedWriter.flush();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                releaseResources(clientHandler.socket, clientHandler.bufferedReader, clientHandler.bufferedWriter);
+            }
+        }
+    }
+
+    public void broadcastMessage(String messageToSend, boolean isServerMessage) {
+        for (ClientHandler clientHandler : clientList) {
+            try {
+                if (!clientHandler.clientUserName.equals(clientUserName) || isServerMessage) {
+                    clientHandler.bufferedWriter.write(messageToSend);
+                    clientHandler.bufferedWriter.newLine();
+                    clientHandler.bufferedWriter.flush();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                releaseResources(clientHandler.socket, clientHandler.bufferedReader, clientHandler.bufferedWriter);
+            }
         }
     }
 
     // Refresh connected clients list
-    private void refreshConnectedClients() {
+    public void updateUIConnectedClients() {
         ServerUI.clearClients();
-        for (ClientHandler clientHandler : clientHandlers) {
-            ServerUI.addClients(clientHandler.getClientName());
+        for (ClientHandler clientProcessor : clientList) {
+            ServerUI.addClients(clientProcessor.getClientName());
         }
-        ServerUI.updateActiveClientsCount(clientHandlers.size());
-    }
+        ServerUI.setClientsCount(clientList.size());
 
-    public void removeClient(String clientName) {
-        for (ClientHandler clientHandler : clientHandlers) {
-            if (clientHandler.clientUserName.equals(clientName)) {
-                clientHandlers.remove(clientHandler);
-                // Close the socket
-                try {
-                    clientHandler.socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                break;
-            }
+        if (clientList.size() > 0) {
+            ServerUI.setClientAvailable(true);
+        } else {
+            ServerUI.setClientAvailable(false);
         }
-        refreshConnectedClients();
     }
 
-    public void removeClientHandler() {
-        clientHandlers.remove(this);
-        broadcastMessage("@Server: " + this.clientUserName + " has left the chat", true);
-        ServerUI.updateLog(
-                "#-Log: " + this.clientIP + ":" + this.clientPort + " @" + this.clientUserName + " has left the chat");
-        refreshConnectedClients();
-    }
-
-    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
-        removeClientHandler();
+    private void releaseResources(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
         try {
             if (bufferedReader != null)
                 bufferedReader.close();
@@ -140,30 +120,13 @@ public class ClientHandler implements Runnable {
                 socket.close();
         } catch (IOException e) {
             e.printStackTrace();
+            ServerUI.logAppend("#-Log: Error releasing resources.");
+            return;
         }
-    }
-
-    public void endServer() {
-        for (ClientHandler clientHandler : clientHandlers) {
-            try {
-                clientHandler.socket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        refreshConnectedClients();
-    }
-
-    public Socket getSocket() {
-        return this.socket;
-    }
-
-    public BufferedReader getBufferedReader() {
-        return this.bufferedReader;
-    }
-
-    public BufferedWriter getBufferedWriter() {
-        return this.bufferedWriter;
+        clientList.remove(this);
+        broadcastMessage("@Server: " + this.clientUserName + " has left.", true);
+        ServerUI.logAppend("#-Log: " + this.clientUserName + " has left.");
+        updateUIConnectedClients();
     }
 
     @Override

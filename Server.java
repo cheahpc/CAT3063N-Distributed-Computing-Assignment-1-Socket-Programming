@@ -1,5 +1,4 @@
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.io.IOException;
 
 public class Server {
@@ -12,7 +11,15 @@ public class Server {
         this.serverSocket = serverSocket;
     }
 
-    public void startServer() {
+    public static String getServerIP() {
+        try {
+            return InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            return "Unknown";
+        }
+    }
+
+    public void initializeServer() {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -41,25 +48,45 @@ public class Server {
     public void endServer() {
         // Close all client handlers
         if (clientHandler != null)
-            clientHandler.endServer();
+            removeAllClients();
         try {
             serverSocket.close();
+            ServerUI.logAppend("#-Log: Server offline.");
+            ServerUI.setServerOnline(false);
         } catch (IOException e) {
             e.printStackTrace();
+            ServerUI.logAppend("#-Log: Error closing server.");
+            ServerUI.setServerOnline(true);
         }
     }
 
-    public int getConnectedClients() {
-        return ClientHandler.clientHandlers.size();
+    public void removeAllClients() {
+        for (ClientHandler activeClient : ClientHandler.clientList) {
+            sendMessage("@Server: You have been removed from the chat.", activeClient.getClientName());
+            try {
+                activeClient.getSocket().close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        ClientHandler.clientList.clear();
+        clientHandler.updateUIConnectedClients();
     }
 
     public void removeClient(String clientName) {
-        clientHandler.removeClient(clientName);
+        for (ClientHandler activeClient : ClientHandler.clientList) {
+            if (activeClient.getClientName().equals(clientName)) {
+                sendMessage("@Server: You have been removed from the chat.", activeClient.getClientName());
+                ClientHandler.clientList.remove(activeClient);
+                try {
+                    activeClient.getSocket().close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                break;
+            }
+        }
+        clientHandler.updateUIConnectedClients();
     }
 
-    // public static void main(String[] args) throws IOException {
-    // ServerSocket serverSocket = new ServerSocket(5000);
-    // Server server = new Server(serverSocket);
-    // server.startServer();
-    // }
 }
