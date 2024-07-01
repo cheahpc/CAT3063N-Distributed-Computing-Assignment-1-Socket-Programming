@@ -168,6 +168,9 @@ public class ServerUI extends JFrame {
         // Add action listeners
         btnStartStop.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent ae) {
+                // Get latest local IP address
+                lblServerIP.setText(Server.getServerIP());
+
                 if (serverOnline) {
                     server.endServer();
                 } else {

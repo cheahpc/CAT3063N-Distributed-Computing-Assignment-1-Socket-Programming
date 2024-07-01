@@ -158,6 +158,9 @@ public class ClientUI extends JFrame {
         btnConnection.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                // Get latest local IP address
+                lblMyAddress.setText("My Address: " + Client.getClientIP() + ":?");
+
                 if (isServerConnected) {
                     logAppend("#-System: Disconnecting from server...");
                     client.closeConnection();
@@ -168,10 +171,11 @@ public class ClientUI extends JFrame {
                     // Step 2: Get values from text fields
                     String username = txtFieldUsername.getText();
                     int port = Integer.parseInt(txtFieldTargetPort.getText());
+                    String targetIP = txtFieldTargetIP.getText();
                     // Step 3: Connect to server
                     logAppend("#-System: Connecting to server...");
                     try {
-                        socket = new Socket("localhost", port);
+                        socket = new Socket(targetIP, port);
                         setServerConnected(true);
                     } catch (IOException e1) {
                         e1.printStackTrace();
@@ -189,7 +193,6 @@ public class ClientUI extends JFrame {
                     // Step 5: Update status
                     logAppend("#-System: Connected to server. Enjoy chatting!");
                     lblMyAddress.setText("My Address: " + Client.getClientIP() + ":" + client.getClientPort());
-
                 }
             }
         });
