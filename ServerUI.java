@@ -169,7 +169,7 @@ public class ServerUI extends JFrame {
         btnStartStop.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent ae) {
                 // Get latest local IP address
-                lblServerIP.setText(Server.getServerIP());
+                lblServerIPValue.setText(Server.getServerIP());
 
                 if (serverOnline) {
                     server.endServer();
